@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>成型品產能計算工具</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f0f4f8;
+      --surface: #ffffff;
+      --surface2: #f8fafc;
+      --border: #e2e8f0;
+      --border-focus: #3b82f6;
+      --primary: #1e40af;
+      --primary-light: #dbeafe;
+      --primary-mid: #3b82f6;
+      --accent: #0ea5e9;
+      --green: #16a34a;
+      --green-light: #dcfce7;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --result-bg: #eff6ff;
+      --result-header: #bfdbfe;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-xs: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* ── Header ── */
+    .app-header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 60%, #2563eb 100%);
+      color: white;
+      padding: 16px 16px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(30,64,175,0.3);
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .app-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .app-title span { font-size: 0.75rem; font-weight: 400; opacity: 0.75; display: block; margin-top: 1px; }
+    .header-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 7px 12px;
+      border: none;
+      border-radius: var(--radius-xs);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-white { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); }
+    .btn-white:hover { background: rgba(255,255,255,0.25); }
+    .btn-green { background: var(--green); color: white; }
+    .btn-green:hover { background: #15803d; }
+    .btn-yellow { background: var(--yellow); color: white; }
+    .btn-yellow:hover { background: #b45309; }
+    .btn-blue { background: var(--primary-mid); color: white; }
+    .btn-blue:hover { background: #2563eb; }
+    .btn-red { background: var(--red); color: white; }
+    .btn-red:hover { background: #b91c1c; }
+    .btn-ghost { background: transparent; color: var(--primary); border: 1.5px solid var(--primary-mid); }
+    .btn-ghost:hover { background: var(--primary-light); }
+    .btn-sm { padding: 5px 9px; font-size: 0.75rem; }
+    .btn-icon { width: 32px; height: 32px; padding: 0; justify-content: center; border-radius: 50%; }
+
+    /* ── Main layout ── */
+    .main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* ── Formula panel ── */
+    .formula-panel {
+      background: white;
+      border-radius: var(--radius);
+      border-left: 4px solid var(--purple);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .formula-panel h3 {
+      color: var(--purple);
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .formula-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 6px;
+    }
+    .formula-item {
+      background: var(--purple-light);
+      border-radius: var(--radius-xs);
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      color: #4c1d95;
+      line-height: 1.5;
+    }
+    .formula-item strong { color: var(--purple); }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      color: var(--text-muted);
+    }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ── Product Card ── */
+    .product-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%);
+      color: white;
+      gap: 8px;
+    }
+    .card-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .card-num {
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .card-name-input {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: var(--radius-xs);
+      color: white;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      min-width: 120px;
+      max-width: 200px;
+    }
+    .card-name-input::placeholder { color: rgba(255,255,255,0.5); }
+    .card-name-input:focus { outline: none; border-color: white; background: rgba(255,255,255,0.25); }
+    .card-actions { display: flex; gap: 6px; }
+
+    /* ── Field grid ── */
+    .fields-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .fields-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    @media (min-width: 480px) {
+      .fields-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 640px) {
+      .fields-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (min-width: 900px) {
+      .fields-grid { grid-template-columns: repeat(5, 1fr); }
+    }
+    @media (min-width: 1100px) {
+      .fields-grid.wide { grid-template-columns: repeat(8, 1fr); }
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .field-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .field-input {
+      width: 100%;
+      padding: 7px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-xs);
+      font-family: inherit;
+      font-size: 0.85rem;
+      color: var(--text);
+      background: var(--surface2);
+      transition: border-color 0.15s, box-shadow 0.15s;
+      -webkit-appearance: none;
+    }
+    .field-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+      background: white;
+    }
+    select.field-input { cursor: pointer; }
+
+    /* cavities badge */
+    .cavities-row {
+      padding: 8px 16px;
+      background: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cavities-label { font-size: 0.8rem; color: var(--primary); font-weight: 600; }
+    .cavities-value {
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 3px 12px;
+      border-radius: 20px;
+    }
+
+    /* ── Results ── */
+    .results-section {
+      padding: 14px 16px;
+    }
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    @media (min-width: 480px) {
+      .results-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 640px) {
+      .results-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (min-width: 900px) {
+      .results-grid { grid-template-columns: repeat(5, 1fr); }
+    }
+
+    .result-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .result-category {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-light);
+    }
+    .result-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .result-value {
+      background: var(--result-bg);
+      border: 1px solid var(--result-header);
+      border-radius: var(--radius-xs);
+      padding: 6px 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .result-value .unit {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-left: 2px;
+    }
+    .result-group.highlight .result-value {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .result-group.highlight .result-value .unit { color: rgba(255,255,255,0.7); }
+
+    /* calc button in card */
+    .card-calc-btn {
+      width: 100%;
+      margin: 0;
+      border-radius: 0 0 var(--radius) var(--radius);
+      padding: 10px;
+      font-size: 0.85rem;
+      background: linear-gradient(90deg, #16a34a, #15803d);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 700;
+      transition: all 0.15s;
+      letter-spacing: 0.03em;
+    }
+    .card-calc-btn:hover { background: linear-gradient(90deg, #15803d, #166534); }
+    .card-calc-btn:active { transform: scaleY(0.97); }
+
+    /* ── Bottom action bar ── */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: white;
+      border-top: 1.5px solid var(--border);
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+      padding: 10px 16px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+    }
+    .bottom-bar .btn { flex: 1; max-width: 160px; justify-content: center; padding: 10px 8px; font-size: 0.82rem; }
+
+    /* Desktop enhancements */
+    @media (min-width: 768px) {
+      .app-title { font-size: 1.25rem; }
+      .main { padding: 20px 24px; }
+      .fields-section { padding: 16px 20px; }
+      .results-section { padding: 16px 20px; }
+      .bottom-bar .btn { max-width: 180px; }
+    }
+
+    /* Smooth transitions */
+    .product-card { animation: cardIn 0.2s ease; }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* No results placeholder */
+    .no-results {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      background: var(--surface2);
+      border-radius: var(--radius-xs);
+    }
+    .no-results button {
+      margin-top: 8px;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: var(--radius-xs);
+      padding: 6px 14px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="app-title">
+        成型品產能計算工具
+        <span>Molding Capacity Calculator</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-white" id="toggle-formulas">📐 公式</button>
+        <button class="btn btn-white" id="calculate-all">⚡ 全部計算</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Formula Panel -->
+    <div class="formula-panel" id="formula-panel" style="display:none">
+      <h3>📐 計算公式說明</h3>
+      <div class="formula-grid">
+        <div class="formula-item"><strong>總穴數</strong> = 模具排列(W) × 模具排列(L)</div>
+        <div class="formula-item"><strong>每班成型模數</strong> = (每班時數 × 3600) ÷ 成型週期</div>
+        <div class="formula-item"><strong>每班成型總數</strong> = 每班成型模數 × 總穴數</div>
+        <div class="formula-item"><strong>每班總重量</strong> = 每班成型總數 × (成型品重量g ÷ 1000)</div>
+        <div class="formula-item"><strong>每班箱數</strong> = 每班成型總數 ÷ 每箱裝數量</div>
+        <div class="formula-item"><strong>每棧板箱數</strong> = 箱/層 × 層/板</div>
+        <div class="formula-item"><strong>每班棧板數</strong> = 每班箱數 ÷ 每棧板箱數</div>
+        <div class="formula-item"><strong>日產能</strong> = 每班成型總數 × 每日班次數</div>
+        <div class="formula-item"><strong>月產能</strong> = 日產能 × 每月工作天數</div>
+        <div class="formula-item"><strong>年產能</strong> = 月產能 × 每年月份</div>
+      </div>
+    </div>
+
+    <!-- Products Container -->
+    <div id="products-container"></div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="empty-state" style="display:none">
+      <div class="empty-icon">🏭</div>
+      <p>尚無產品資料<br>點擊下方「新增產品」按鈕開始計算</p>
+    </div>
+
+  </main>
+
+  <!-- Bottom Action Bar -->
+  <div class="bottom-bar">
+    <button class="btn btn-green" id="add-product">＋ 新增產品</button>
+    <button class="btn btn-yellow" id="reset-all">↺ 重設全部</button>
+  </div>
+
+  <script>
+    const initialProductData = {
+      productName: '',
+      mouldWidthCount: 1,
+      mouldLengthCount: 1,
+      productWeight: 0,
+      cycleTime: 0,
+      bagQuantity: 0,
+      boxQuantity: 0,
+      filmWidth: 0,
+      filmThickness: 0,
+      filmWeight: 0,
+      hoursPerShift: 8,
+      shiftsPerDay: 2,
+      boxesPerLayer: 0,
+      layersPerPallet: 0,
+      workingDaysPerMonth: 22,
+      monthsPerYear: 12
+    };
+
+    let productList = [];
+    let nextId = 1;
+    let resultsMap = {};
+
+    // ── Calculate ──
+    function calculate(p) {
+      const totalCavities = p.mouldWidthCount * p.mouldLengthCount;
+      const mouldCountPerShift = p.cycleTime > 0 ? (p.hoursPerShift * 3600) / p.cycleTime : 0;
+      const totalProductsPerShift = mouldCountPerShift * totalCavities;
+      const totalWeightPerShift = totalProductsPerShift * (p.productWeight / 1000);
+      const boxesPerShift = p.boxQuantity > 0 ? totalProductsPerShift / p.boxQuantity : 0;
+      const boxesPerPallet = p.boxesPerLayer * p.layersPerPallet;
+      const palletsPerShift = boxesPerPallet > 0 ? boxesPerShift / boxesPerPallet : 0;
+      const dailyCapacity = totalProductsPerShift * p.shiftsPerDay;
+      const dailyBoxes = boxesPerShift * p.shiftsPerDay;
+      const dailyPallets = palletsPerShift * p.shiftsPerDay;
+      const dailyTonnage = totalWeightPerShift * p.shiftsPerDay;
+      const monthlyCapacity = dailyCapacity * p.workingDaysPerMonth;
+      const monthlyTonnage = dailyTonnage * p.workingDaysPerMonth;
+      const yearlyCapacity = monthlyCapacity * p.monthsPerYear;
+      const yearlyTonnage = monthlyTonnage * p.monthsPerYear;
+      return {
+        totalCavities, mouldCountPerShift, totalProductsPerShift, totalWeightPerShift,
+        boxesPerShift, palletsPerShift, dailyCapacity, dailyBoxes, dailyPallets, dailyTonnage,
+        monthlyCapacity, monthlyTonnage, yearlyCapacity, yearlyTonnage
+      };
+    }
+
+    function fmt(n) {
+      if (n === undefined || n === null || isNaN(n)) return '—';
+      const v = parseFloat(n.toFixed(2));
+      return new Intl.NumberFormat('zh-TW').format(v);
+    }
+
+    // ── Render ──
+    function render() {
+      const container = document.getElementById('products-container');
+      const empty = document.getElementById('empty-state');
+      container.innerHTML = '';
+
+      if (productList.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      productList.forEach((p, idx) => {
+        const res = resultsMap[p.id];
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.dataset.id = p.id;
+
+        // ── Header ──
+        const cardHeader = `
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-num">${idx + 1}</div>
+              <input class="card-name-input" type="text" placeholder="品項名稱" 
+                value="${escHtml(p.productName)}"
+                onchange="updateField(${p.id}, 'productName', this.value)">
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-white btn-sm" onclick="resetProduct(${p.id})">↺ 重設</button>
+              <button class="btn btn-red btn-sm" onclick="deleteProduct(${p.id})">✕ 刪除</button>
+            </div>
+          </div>
+        `;
+
+        // ── Mould & product section ──
+        const sec1 = `
+          <div class="fields-section">
+            <div class="section-label">模具 &amp; 成型品</div>
+            <div class="fields-grid wide">
+              ${field('模具排列 W', `<input class="field-input" type="number" min="1" value="${p.mouldWidthCount}" onchange="updateField(${p.id},'mouldWidthCount',this.value)">`)}
+              ${field('模具排列 L', `<input class="field-input" type="number" min="1" value="${p.mouldLengthCount}" onchange="updateField(${p.id},'mouldLengthCount',this.value)">`)}
+              ${field('成型品重量(g)', `<input class="field-input" type="number" min="0" step="0.01" value="${p.productWeight}" onchange="updateField(${p.id},'productWeight',this.value)">`)}
+              ${field('成型週期(秒)', `<input class="field-input" type="number" min="0" step="0.1" value="${p.cycleTime}" onchange="updateField(${p.id},'cycleTime',this.value)">`)}
+              ${field('每袋數量', `<input class="field-input" type="number" min="0" value="${p.bagQuantity}" onchange="updateField(${p.id},'bagQuantity',this.value)">`)}
+              ${field('每箱數量', `<input class="field-input" type="number" min="0" value="${p.boxQuantity}" onchange="updateField(${p.id},'boxQuantity',this.value)">`)}
+              ${field('膠片寬度(mm)', `<input class="field-input" type="number" min="0" value="${p.filmWidth}" onchange="updateField(${p.id},'filmWidth',this.value)">`)}
+              ${field('膠片厚度(mm)', `<input class="field-input" type="number" min="0" step="0.01" value="${p.filmThickness}" onchange="updateField(${p.id},'filmThickness',this.value)">`)}
+              ${field('膠片重量(kg)', `<input class="field-input" type="number" min="0" step="0.1" value="${p.filmWeight}" onchange="updateField(${p.id},'filmWeight',this.value)">`)}
+            </div>
+          </div>
+        `;
+
+        // ── Production params ──
+        const sec2 = `
+          <div class="fields-section">
+            <div class="section-label">生產參數</div>
+            <div class="fields-grid wide">
+              ${field('每班時數', `<input class="field-input" type="number" min="0" step="0.5" value="${p.hoursPerShift}" onchange="updateField(${p.id},'hoursPerShift',this.value)">`)}
+              ${field('每日班次', `
+                <select class="field-input" onchange="updateField(${p.id},'shiftsPerDay',this.value)">
+                  <option value="1" ${p.shiftsPerDay==1?'selected':''}>1班制</option>
+                  <option value="2" ${p.shiftsPerDay==2?'selected':''}>2班制</option>
+                  <option value="3" ${p.shiftsPerDay==3?'selected':''}>3班制</option>
+                  <option value="4" ${p.shiftsPerDay==4?'selected':''}>4班制</option>
+                </select>`)}
+              ${field('每月工作天', `<input class="field-input" type="number" min="0" value="${p.workingDaysPerMonth}" onchange="updateField(${p.id},'workingDaysPerMonth',this.value)">`)}
+              ${field('每年月份', `<input class="field-input" type="number" min="0" value="${p.monthsPerYear}" onchange="updateField(${p.id},'monthsPerYear',this.value)">`)}
+              ${field('箱 / 層', `<input class="field-input" type="number" min="0" value="${p.boxesPerLayer}" onchange="updateField(${p.id},'boxesPerLayer',this.value)">`)}
+              ${field('層 / 板', `<input class="field-input" type="number" min="0" value="${p.layersPerPallet}" onchange="updateField(${p.id},'layersPerPallet',this.value)">`)}
+            </div>
+          </div>
+        `;
+
+        // ── Cavities ──
+        const cavities = p.mouldWidthCount * p.mouldLengthCount;
+        const cavRow = `
+          <div class="cavities-row">
+            <span class="cavities-label">總穴數</span>
+            <span class="cavities-value">${cavities} 穴</span>
+          </div>
+        `;
+
+        // ── Results ──
+        let resSection = '';
+        if (res) {
+          resSection = `
+            <div class="results-section">
+              <div class="section-label">每班產出</div>
+              <div class="results-grid">
+                ${rg('每班成型模數', fmt(res.mouldCountPerShift), '模')}
+                ${rg('每班成型總數', fmt(res.totalProductsPerShift), 'pcs', true)}
+                ${rg('每班總重量', fmt(res.totalWeightPerShift), 'kg')}
+                ${rg('每班箱數', fmt(res.boxesPerShift), '箱')}
+                ${rg('每班棧板數', fmt(res.palletsPerShift), '板')}
+              </div>
+              <div class="section-label" style="margin-top:12px">每日 / 長期</div>
+              <div class="results-grid">
+                ${rg('每日產量', fmt(res.dailyCapacity), 'pcs', true)}
+                ${rg('每日重量', fmt(res.dailyTonnage), 'kg')}
+                ${rg('每日箱數', fmt(res.dailyBoxes), '箱')}
+                ${rg('每日棧板數', fmt(res.dailyPallets), '板')}
+                ${rg('班制', p.shiftsPerDay + '', '班')}
+                ${rg('月產能', fmt(res.monthlyCapacity), 'pcs', true)}
+                ${rg('月噸數', fmt(res.monthlyTonnage), 'kg')}
+                ${rg('年產能', fmt(res.yearlyCapacity), 'pcs', true)}
+                ${rg('年噸數', fmt(res.yearlyTonnage), 'kg')}
+              </div>
+            </div>
+          `;
+        } else {
+          resSection = `<div class="no-results">尚未計算 — 請點擊下方「立即計算」<br></div>`;
+        }
+
+        const calcBtn = `<button class="card-calc-btn" onclick="calcProduct(${p.id})">⚡ 立即計算</button>`;
+
+        card.innerHTML = cardHeader + sec1 + sec2 + cavRow + resSection + calcBtn;
+        container.appendChild(card);
+      });
+    }
+
+    function field(label, input) {
+      return `<div class="field-group"><div class="field-label">${label}</div>${input}</div>`;
+    }
+
+    function rg(label, val, unit, highlight) {
+      return `<div class="result-group${highlight?' highlight':''}">
+        <div class="result-label">${label}</div>
+        <div class="result-value">${val}<span class="unit">${unit}</span></div>
+      </div>`;
+    }
+
+    function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    // ── Actions ──
+    function updateField(id, field, value) {
+      const idx = productList.findIndex(p => p.id === id);
+      if (idx === -1) return;
+      productList[idx][field] = field === 'productName' ? value : (parseFloat(value) || 0);
+      render();
+    }
+
+    function addNewProduct() {
+      productList.push({ ...initialProductData, id: nextId++ });
+      render();
+      // scroll to bottom
+      setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50);
+    }
+
+    function deleteProduct(id) {
+      productList = productList.filter(p => p.id !== id);
+      delete resultsMap[id];
+      render();
+    }
+
+    function resetProduct(id) {
+      const idx = productList.findIndex(p => p.id === id);
+      if (idx !== -1) {
+        productList[idx] = { ...initialProductData, id };
+        delete resultsMap[id];
+        render();
+      }
+    }
+
+    function calcProduct(id) {
+      const p = productList.find(p => p.id === id);
+      if (p) { resultsMap[p.id] = calculate(p); render(); }
+    }
+
+    function calcAll() {
+      productList.forEach(p => { resultsMap[p.id] = calculate(p); });
+      render();
+    }
+
+    function resetAll() {
+      if (productList.length === 0 || confirm('確定要重設全部產品嗎？')) {
+        productList = []; resultsMap = {}; nextId = 1; render();
+      }
+    }
+
+    function toggleFormulas() {
+      const panel = document.getElementById('formula-panel');
+      const btn = document.getElementById('toggle-formulas');
+      const vis = panel.style.display !== 'none';
+      panel.style.display = vis ? 'none' : 'block';
+      btn.textContent = vis ? '📐 公式' : '📐 隱藏公式';
+    }
+
+    // ── Event listeners ──
+    document.getElementById('add-product').addEventListener('click', addNewProduct);
+    document.getElementById('reset-all').addEventListener('click', resetAll);
+    document.getElementById('calculate-all').addEventListener('click', calcAll);
+    document.getElementById('toggle-formulas').addEventListener('click', toggleFormulas);
+
+    // ── Init ──
+    addNewProduct();
+  </script>
+</body>
+</html>
